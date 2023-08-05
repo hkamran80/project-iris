@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "iris-links",
+  "title": "Iris Links",
+  "description": "The schema for the links for Iris",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "description": "The optional description that follows the date in parantheses"
+    },
+    "stories": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/link"
+          },
+          {
+            "type": "object",
+            "description": "A group of stories",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "The story group's name"
+              },
+              "links": {
+                "type": "array",
+                "description": "The story group's links",
+                "items": { "$ref": "#/$defs/link" },
+                "minItems": 1,
+                "uniqueItems": true
+              }
+            },
+            "required": ["name", "links"]
+          }
+        ]
+      }
+    }
+  },
+  "required": ["stories"],
+  "$defs": {
+    "link": {
+      "description": "A link to a story",
+      "oneOf": [
+        {
+          "type": "object",
+          "description": "The link with a title schema should only be used with providers like the BBC, who don't provide a title in their URLs",
+          "properties": {
+            "link": {
+              "type": "string",
+              "description": "The link to the story"
+            },
+            "title": {
+              "type": "string",
+              "description": "The title of the story"
+            }
+          },
+          "required": ["link", "title"]
+        },
+        {
+          "type": "string",
+          "description": "The link to the story"
+        }
+      ]
+    }
+  }
+}
