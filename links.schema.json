@@ -9,6 +9,10 @@
       "type": "string",
       "description": "The optional description that follows the date in parantheses"
     },
+    "published": {
+      "type": "string",
+      "description": "The last time, in ISO 8601 format, the document was synced with the bot"
+    },
     "stories": {
       "type": "array",
       "items": {
