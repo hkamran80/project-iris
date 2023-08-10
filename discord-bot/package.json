@@ -1,0 +1,43 @@
+{
+    "name": "iris-discord-bot",
+    "version": "1.0.0",
+    "private": true,
+    "description": "",
+    "main": "index.js",
+    "type": "module",
+    "scripts": {
+        "lint": "eslint . --ext .ts",
+        "lint:fix": "eslint . --ext .ts --fix",
+        "lint:ts": "tsc --noEmit -p .",
+        "format": "prettier . --write",
+        "build": "rimraf ./dist && tsc",
+        "start": "rimraf ./dist && tsc && cd dist && node --experimental-loader=extensionless  index.js"
+    },
+    "author": {
+        "name": "H. Kamran",
+        "email": "hkamran@hkamran.com",
+        "url": "https://hkamran.com"
+    },
+    "license": "AGPLv3",
+    "dependencies": {
+        "discord.js": "^14.12.1",
+        "dotenv": "^16.3.1",
+        "extensionless": "^1.4.5",
+        "redis": "^4.6.7"
+    },
+    "devDependencies": {
+        "@hkamran/eslint-config": "^1.0.1",
+        "@hkamran/prettier-config": "^1.1.1",
+        "@types/node": "^20.4.8",
+        "@typescript-eslint/eslint-plugin": "^6.2.1",
+        "@typescript-eslint/parser": "^6.2.1",
+        "eslint": "^8.46.0",
+        "eslint-config-prettier": "^9.0.0",
+        "eslint-plugin-import": "npm:eslint-plugin-i@2.28.0-2",
+        "prettier": "^3.0.1",
+        "rimraf": "^5.0.1",
+        "ts-node": "^10.9.1",
+        "typescript": "^5.1.6"
+    },
+    "prettier": "@hkamran/prettier-config"
+}
