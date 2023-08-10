@@ -13,3 +13,14 @@ export const dateToString = (date: string): string =>
         day: "numeric",
         year: "numeric",
     });
+
+/**
+ * Get the current date in the format of `YYYY-MM-DD`
+ * @returns {string} A date in the format of `YYYY-MM-DD`
+ */
+export const getISODate = (): string => {const date = new Date();
+    return new Date(
+        +date - date.getTimezoneOffset() * 60 * 1000,
+    )
+        .toISOString()
+        .split("T")[0];}
