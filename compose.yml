@@ -10,13 +10,15 @@ services:
 
     dashboard:
         build: ./dashboard
-        depends_on: redis-stack
+        depends_on:
+          - redis-stack
         env_file: ./dashboard/.env.local
         restart: always
 
     discord-bot:
         build: ./discord-bot
-        depends_on: redis-stack
+        depends_on:
+          - redis-stack
         env_file: ./discord-bot/.env
         restart: always
 
