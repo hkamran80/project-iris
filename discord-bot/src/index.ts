@@ -27,26 +27,20 @@ discordClient.once(Events.ClientReady, async (bot) => {
         const stories = (await redisClient.json.get(
             redisMessage,
         )) as StoriesDocument;
+        const redisId = `${redisMessage}.messageId`
 
         if (stories.published !== "") {
             const compiledBlocks = compileMessages(redisMessage, stories);
 
             if (compiledBlocks.length > 0) {
                 const storyMessageId = await redisClient.get(
-                    `${redisMessage}.messageId`,
+                   redisId,
                 );
                 if (storyMessageId) {
                     const message = await storiesChannel.messages.fetch(
                         storyMessageId,
                     );
                     if (message) {
-                        if (!message.hasThread) {
-                            await message.startThread({
-                                name: dateToString(redisMessage),
-                                autoArchiveDuration: 1440,
-                            });
-                        }
-
                         await message.edit(compiledBlocks[0]);
 
                         if (message.hasThread && compiledBlocks.length > 1) {
@@ -119,7 +113,7 @@ discordClient.once(Events.ClientReady, async (bot) => {
                         compiledBlocks[0],
                     );
                     await redisClient.set(
-                        `${redisMessage}.discord`,
+                        redisId,
                         message.id,
                     );
 
