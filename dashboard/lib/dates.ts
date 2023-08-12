@@ -3,7 +3,7 @@
  * @param date {string} A date in the format of `YYYY-MM-DD`
  * @returns {Date} a `Date` object
  */
-const getDateFromYYYYMMDD = (date: string): Date =>
+export const getDateFromYYYYMMDD = (date: string): Date =>
     new Date(
         parseInt(date.substring(0, 4)),
         parseInt(date.substring(5, 7)) - 1,
