@@ -44,3 +44,6 @@ export const checkHashes = (
 
     return { stories: storiesHashMatch, description: descriptionHashMatch };
 };
+
+export const checkChangedHash = (hashOutput: string | boolean) =>
+    typeof hashOutput === "string";
