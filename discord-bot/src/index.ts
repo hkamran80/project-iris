@@ -4,6 +4,7 @@ import { config } from "dotenv";
 import { dateToString } from "./dates";
 import { compileMessages, generateUpdateMessage } from "./messaging";
 import type { StoriesDocument } from "./stories";
+// import { checkHashes } from "./update";
 
 config({ path: "../.env" });
 
@@ -28,16 +29,23 @@ discordClient.once(Events.ClientReady, async (bot) => {
             redisMessage,
         )) as StoriesDocument;
         const redisId = `${redisMessage}.messageId`;
+        const redisHashesId = `${redisMessage}.hashes`
 
         console.log(`Story update received for ${redisMessage}.`);
 
         if (stories.published !== "") {
             const compiledBlocks = compileMessages(redisMessage, stories);
-
+            
             if (compiledBlocks.length > 0) {
                 const storyMessageId = await redisClient.get(redisId);
                 if (storyMessageId) {
                     console.log(`Story message exists.`);
+                    
+                    const hashes = await redisClient.hGetAll(redisHashesId)
+                    console.debug(hashes)
+                    // const hashMatches = checkHashes
+
+                    
                     const message = await storiesChannel.messages.fetch(
                         storyMessageId,
                     );

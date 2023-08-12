@@ -7,7 +7,7 @@ export type StoryGroup = {
 
 export type Story = StoryLink | StoryGroup;
 
-type Stories = Array<Story>;
+export type Stories = Array<Story>;
 
 export type StoriesDocument = {
     description?: string;
