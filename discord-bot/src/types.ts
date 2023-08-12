@@ -14,3 +14,5 @@ export type StoriesDocument = {
     published: string;
     stories: Stories;
 };
+
+export type HashOutput<T=string | boolean>=Record<"stories" | "description", T>
