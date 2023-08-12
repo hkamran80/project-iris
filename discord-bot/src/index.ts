@@ -27,36 +27,35 @@ discordClient.once(Events.ClientReady, async (bot) => {
         const stories = (await redisClient.json.get(
             redisMessage,
         )) as StoriesDocument;
-        const redisId = `${redisMessage}.messageId`
+        const redisId = `${redisMessage}.messageId`;
+
+        console.log(`Story update received for ${redisMessage}.`);
 
         if (stories.published !== "") {
             const compiledBlocks = compileMessages(redisMessage, stories);
 
             if (compiledBlocks.length > 0) {
-                const storyMessageId = await redisClient.get(
-                   redisId,
-                );
+                const storyMessageId = await redisClient.get(redisId);
                 if (storyMessageId) {
+                    console.log(`Story message exists.`);
                     const message = await storiesChannel.messages.fetch(
                         storyMessageId,
                     );
                     if (message) {
                         await message.edit(compiledBlocks[0]);
 
-                        if (message.hasThread && compiledBlocks.length > 1) {
-                            const existingThreadMessages = (
-                                await message.thread!.messages.fetch()
-                            ).filter(
-                                (m) => m.author.id === bot.user.id && !m.system,
-                            );
-                            const existingThreadMessagesIds =
-                                existingThreadMessages.map((m) => m.id);
-                            const existingThreadMessagesCount =
-                                existingThreadMessages.size;
+                        const existingThreadMessages = (
+                            await message.thread!.messages.fetch()
+                        ).filter(
+                            (m) => m.author.id === bot.user.id && !m.system,
+                        );
+                        const existingThreadMessagesIds =
+                            existingThreadMessages.map((m) => m.id);
+                        const existingThreadMessagesCount =
+                            existingThreadMessages.size;
 
-                            const threadCompiledBlocks =
-                                compiledBlocks.slice(1);
-
+                        const threadCompiledBlocks = compiledBlocks.slice(1);
+                        if (compiledBlocks.length > 1) {
                             threadCompiledBlocks.forEach(
                                 async (block, index) => {
                                     if (
@@ -77,27 +76,31 @@ discordClient.once(Events.ClientReady, async (bot) => {
                                     }
                                 },
                             );
+                            console.log("Thread messages sent.");
+                        }
 
-                            if (
-                                existingThreadMessagesCount >
-                                threadCompiledBlocks.length
-                            ) {
-                                const messageLoading = await Promise.all(
-                                    existingThreadMessagesIds
-                                        .slice(threadCompiledBlocks.length - 1)
-                                        .map((messageId) =>
-                                            message.thread!.messages.fetch(
-                                                messageId,
-                                            ),
-                                        ),
-                                );
+                        if (
+                            existingThreadMessagesCount >
+                            threadCompiledBlocks.length
+                        ) {
+                            const difference =
+                                existingThreadMessagesCount -
+                                threadCompiledBlocks.length;
+                            console.log(
+                                `Extraneous messages detected, removing ${difference} message${
+                                    difference !== 1 ? "s" : ""
+                                }.`,
+                            );
+                            existingThreadMessagesIds
+                                .slice(threadCompiledBlocks.length - 1)
+                                .map(async (messageId) => {
+                                    const extraneousMessage =
+                                        await message.thread!.messages.fetch(
+                                            messageId,
+                                        );
 
-                                await Promise.all(
-                                    messageLoading.map((message) =>
-                                        message.delete(),
-                                    ),
-                                );
-                            }
+                                    extraneousMessage.delete();
+                                });
                         }
 
                         updatesChannel.send(
@@ -107,15 +110,14 @@ discordClient.once(Events.ClientReady, async (bot) => {
                                 true,
                             ),
                         );
+                        console.log("Update message sent.");
                     }
                 } else {
+                    console.log("No story message existing, creating...");
                     const message = await storiesChannel.send(
                         compiledBlocks[0],
                     );
-                    await redisClient.set(
-                        redisId,
-                        message.id,
-                    );
+                    await redisClient.set(redisId, message.id);
 
                     const thread = await message.startThread({
                         name: dateToString(redisMessage),
@@ -124,10 +126,12 @@ discordClient.once(Events.ClientReady, async (bot) => {
                     for (const block of compiledBlocks.slice(1)) {
                         thread.send(block);
                     }
+                    console.log("Messages sent.");
 
                     updatesChannel.send(
                         generateUpdateMessage(redisMessage, thread.id, false),
                     );
+                    console.log("Update message sent.");
                 }
             }
         }
