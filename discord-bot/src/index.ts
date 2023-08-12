@@ -3,7 +3,7 @@ import { createClient } from "redis";
 import { config } from "dotenv";
 import { dateToString } from "./dates";
 import { compileMessages, generateUpdateMessage } from "./messaging";
-import { checkHashes } from "./update";
+import { checkChangedHash, checkHashes } from "./update";
 import type { HashOutput, StoriesDocument } from "./types";
 
 config({ path: "../.env" });
@@ -29,97 +29,126 @@ discordClient.once(Events.ClientReady, async (bot) => {
             redisMessage,
         )) as StoriesDocument;
         const redisId = `${redisMessage}.messageId`;
-        const redisHashesId = `${redisMessage}.hashes`
+        const redisHashesId = `${redisMessage}.hashes`;
 
         console.log(`Story update received for ${redisMessage}.`);
 
         if (stories.published !== "") {
             const compiledBlocks = compileMessages(redisMessage, stories);
-            
+
             if (compiledBlocks.length > 0) {
                 const storyMessageId = await redisClient.get(redisId);
                 if (storyMessageId) {
                     console.log(`Story message exists.`);
-                    
-                    const hashes = await redisClient.hGetAll(redisHashesId) as HashOutput<string>
-                    const hashMatches = checkHashes(stories, hashes.stories, hashes.description)
 
-                    console.debug(hashMatches)
-                    
+                    const hashes = (await redisClient.hGetAll(
+                        redisHashesId,
+                    )) as HashOutput<string>;
+                    const hashMatches = checkHashes(
+                        stories,
+                        hashes.stories,
+                        hashes.description,
+                    );
+                    const hashChanges: HashOutput<boolean> = {
+                        stories: checkChangedHash(hashMatches.stories),
+                        description: checkChangedHash(hashMatches.description),
+                    };
+
                     const message = await storiesChannel.messages.fetch(
                         storyMessageId,
                     );
                     if (message) {
-                        await message.edit(compiledBlocks[0]);
+                        if (hashChanges.stories || hashChanges.description) {
+                            await message.edit(compiledBlocks[0]);
 
-                        const existingThreadMessages = (
-                            await message.thread!.messages.fetch()
-                        ).filter(
-                            (m) => m.author.id === bot.user.id && !m.system,
-                        );
-                        const existingThreadMessagesIds =
-                            existingThreadMessages.map((m) => m.id);
-                        const existingThreadMessagesCount =
-                            existingThreadMessages.size;
+                            if (hashChanges.description) {
+                                console.log("Updated description.");
+                                await redisClient.hSet(
+                                    redisHashesId,
+                                    "description",
+                                    hashMatches.description as string,
+                                );
+                            }
+                        }
 
-                        const threadCompiledBlocks = compiledBlocks.slice(1);
-                        if (compiledBlocks.length > 1) {
-                            threadCompiledBlocks.forEach(
-                                async (block, index) => {
-                                    if (
-                                        index + 1 <=
-                                        existingThreadMessagesCount
-                                    ) {
-                                        const threadMessage =
-                                            await message.thread!.messages.fetch(
-                                                existingThreadMessagesIds.at(
-                                                    index,
-                                                ) as string,
-                                            );
-                                        if (threadMessage) {
-                                            threadMessage.edit(block);
+                        if (hashChanges.stories) {
+                            const existingThreadMessages = (
+                                await message.thread!.messages.fetch()
+                            ).filter(
+                                (m) => m.author.id === bot.user.id && !m.system,
+                            );
+                            const existingThreadMessagesIds =
+                                existingThreadMessages.map((m) => m.id);
+                            const existingThreadMessagesCount =
+                                existingThreadMessages.size;
+
+                            const threadCompiledBlocks =
+                                compiledBlocks.slice(1);
+                            if (compiledBlocks.length > 1) {
+                                threadCompiledBlocks.forEach(
+                                    async (block, index) => {
+                                        if (
+                                            index + 1 <=
+                                            existingThreadMessagesCount
+                                        ) {
+                                            const threadMessage =
+                                                await message.thread!.messages.fetch(
+                                                    existingThreadMessagesIds.at(
+                                                        index,
+                                                    ) as string,
+                                                );
+                                            if (threadMessage) {
+                                                threadMessage.edit(block);
+                                            }
+                                        } else {
+                                            await message.thread!.send(block);
                                         }
-                                    } else {
-                                        await message.thread!.send(block);
-                                    }
-                                },
+                                    },
+                                );
+                                console.log("Thread messages sent.");
+                            }
+
+                            if (
+                                existingThreadMessagesCount >
+                                threadCompiledBlocks.length
+                            ) {
+                                const difference =
+                                    existingThreadMessagesCount -
+                                    threadCompiledBlocks.length;
+                                console.log(
+                                    `Extraneous messages detected, removing ${difference} message${
+                                        difference !== 1 ? "s" : ""
+                                    }.`,
+                                );
+                                existingThreadMessagesIds
+                                    .slice(threadCompiledBlocks.length - 1)
+                                    .map(async (messageId) => {
+                                        const extraneousMessage =
+                                            await message.thread!.messages.fetch(
+                                                messageId,
+                                            );
+
+                                        extraneousMessage.delete();
+                                    });
+                            }
+
+                            console.log("Updated stories.");
+                            await redisClient.hSet(
+                                redisHashesId,
+                                "stories",
+                                hashMatches.stories as string,
                             );
-                            console.log("Thread messages sent.");
+
+                            // TODO: UNCOMMENT UPDATE MESSAGE
+                            // updatesChannel.send(
+                            //     generateUpdateMessage(
+                            //         redisMessage,
+                            //         message.thread!.id,
+                            //         true,
+                            //     ),
+                            // );
+                            // console.log("Update message sent.");
                         }
-
-                        if (
-                            existingThreadMessagesCount >
-                            threadCompiledBlocks.length
-                        ) {
-                            const difference =
-                                existingThreadMessagesCount -
-                                threadCompiledBlocks.length;
-                            console.log(
-                                `Extraneous messages detected, removing ${difference} message${
-                                    difference !== 1 ? "s" : ""
-                                }.`,
-                            );
-                            existingThreadMessagesIds
-                                .slice(threadCompiledBlocks.length - 1)
-                                .map(async (messageId) => {
-                                    const extraneousMessage =
-                                        await message.thread!.messages.fetch(
-                                            messageId,
-                                        );
-
-                                    extraneousMessage.delete();
-                                });
-                        }
-
-                        // TODO: UNCOMMENT UPDATE MESSAGE
-                        // updatesChannel.send(
-                        //     generateUpdateMessage(
-                        //         redisMessage,
-                        //         message.thread!.id,
-                        //         true,
-                        //     ),
-                        // );
-                        // console.log("Update message sent.");
                     }
                 } else {
                     console.log("No story message existing, creating...");
@@ -141,6 +170,11 @@ discordClient.once(Events.ClientReady, async (bot) => {
                         generateUpdateMessage(redisMessage, thread.id, false),
                     );
                     console.log("Update message sent.");
+
+                    await redisClient.hSet(redisHashesId, {
+                        stories: "",
+                        description: "",
+                    });
                 }
             }
         }
