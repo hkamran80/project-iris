@@ -139,15 +139,14 @@ discordClient.once(Events.ClientReady, async (bot) => {
                                 hashMatches.stories as string,
                             );
 
-                            // TODO: UNCOMMENT UPDATE MESSAGE
-                            // updatesChannel.send(
-                            //     generateUpdateMessage(
-                            //         redisMessage,
-                            //         message.thread!.id,
-                            //         true,
-                            //     ),
-                            // );
-                            // console.log("Update message sent.");
+                            updatesChannel.send(
+                                generateUpdateMessage(
+                                    redisMessage,
+                                    message.thread!.id,
+                                    true,
+                                ),
+                            );
+                            console.log("Update message sent.");
                         }
                     }
                 } else {
