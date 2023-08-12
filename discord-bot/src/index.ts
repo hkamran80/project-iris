@@ -3,8 +3,8 @@ import { createClient } from "redis";
 import { config } from "dotenv";
 import { dateToString } from "./dates";
 import { compileMessages, generateUpdateMessage } from "./messaging";
-import type { StoriesDocument } from "./stories";
-// import { checkHashes } from "./update";
+import { checkHashes } from "./update";
+import type { HashOutput, StoriesDocument } from "./types";
 
 config({ path: "../.env" });
 
@@ -41,10 +41,10 @@ discordClient.once(Events.ClientReady, async (bot) => {
                 if (storyMessageId) {
                     console.log(`Story message exists.`);
                     
-                    const hashes = await redisClient.hGetAll(redisHashesId)
-                    console.debug(hashes)
-                    // const hashMatches = checkHashes
+                    const hashes = await redisClient.hGetAll(redisHashesId) as HashOutput<string>
+                    const hashMatches = checkHashes(stories, hashes.stories, hashes.description)
 
+                    console.debug(hashMatches)
                     
                     const message = await storiesChannel.messages.fetch(
                         storyMessageId,
@@ -111,14 +111,15 @@ discordClient.once(Events.ClientReady, async (bot) => {
                                 });
                         }
 
-                        updatesChannel.send(
-                            generateUpdateMessage(
-                                redisMessage,
-                                message.thread!.id,
-                                true,
-                            ),
-                        );
-                        console.log("Update message sent.");
+                        // TODO: UNCOMMENT UPDATE MESSAGE
+                        // updatesChannel.send(
+                        //     generateUpdateMessage(
+                        //         redisMessage,
+                        //         message.thread!.id,
+                        //         true,
+                        //     ),
+                        // );
+                        // console.log("Update message sent.");
                     }
                 } else {
                     console.log("No story message existing, creating...");
