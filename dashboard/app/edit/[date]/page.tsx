@@ -37,7 +37,7 @@ const Editor = async ({ params }: { params: { date: string } }) => {
                                   .replace(" at ", " ")}`}
                     </p>
                 </div>
-                <div className="mt-4 space-x-4 sm:ml-16 sm:mt-0 items-center">
+                <div className="mt-4 items-center space-x-4 sm:ml-16 sm:mt-0">
                     <PublishButton />
                     <AddGroupButton firstNonGroupIndex={firstNonGroupIndex} />
                     <AddLinkButton />
