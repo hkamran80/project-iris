@@ -2,9 +2,6 @@ services:
     redis-stack:
         image: redis/redis-stack:latest
         restart: always
-        ports:
-          # - "6379:6379" # Redis
-          - "13333:8001" # RedisInsight
         volumes:
           - ./redis/:/data
 
