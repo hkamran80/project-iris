@@ -39,6 +39,13 @@ export const deleteItem = async (
     if (revalidate) revalidatePath(`/edit/${date}`);
 };
 
+export const publishItem = async (date: string) => {
+    if (!client.isOpen) await client.connect();
+    await client.json.set(date, "$.published", new Date().toISOString());
+    await client.publish("updates", date);
+    revalidatePath(`/edit/${date}`);
+};
+
 export const updateGroupName = async (
     date: string,
     groupIndex: number,

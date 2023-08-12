@@ -2,8 +2,9 @@ import { dateToString } from "@/lib/dates";
 import { generateKey } from "@/lib/editor";
 import { getDate } from "@/utils/getDate";
 import StoryRow from "@/components/StoryRow/StoryRow";
-import AddLinkButton from "./AddLinkButton";
+import PublishButton from "./PublishButton";
 import AddGroupButton from "./AddGroupButton";
+import AddLinkButton from "./AddLinkButton";
 
 const Editor = async ({ params }: { params: { date: string } }) => {
     const dateString = dateToString(params.date);
@@ -24,10 +25,20 @@ const Editor = async ({ params }: { params: { date: string } }) => {
                     <p className="mt-1 text-sm text-gray-500">
                         {document.published === ""
                             ? "Unpublished"
-                            : `Last published at [TBA]`}
+                            : `Last published at ${new Date(document.published)
+                                  .toLocaleString(undefined, {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                      hour: "numeric",
+                                      minute: "numeric",
+                                      second: "numeric",
+                                  })
+                                  .replace(" at ", " ")}`}
                     </p>
                 </div>
-                <div className="mt-4 space-x-4 sm:ml-16 sm:mt-0">
+                <div className="mt-4 space-x-4 sm:ml-16 sm:mt-0 items-center">
+                    <PublishButton />
                     <AddGroupButton firstNonGroupIndex={firstNonGroupIndex} />
                     <AddLinkButton />
                 </div>
