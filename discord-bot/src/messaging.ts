@@ -41,8 +41,8 @@ export const compileMessages = (
 
         if (message.length + 1 + blocksLength[currentBlock] > 2000) {
             currentBlock++;
-            blocks[currentBlock] = [];
-            blocksLength[currentBlock] = 0;
+            blocks[currentBlock] = [message];
+            blocksLength[currentBlock] = message.length;
         } else {
             blocks[currentBlock] = [...blocks[currentBlock], message];
             blocksLength[currentBlock] += message.length;
@@ -64,7 +64,7 @@ export const compileMessages = (
         .map((block) => block.join("\n"));
 };
 
-const template = `<@&1105668001275060334> 
+const updateTemplate = `<@&1105668001275060334> 
 > **[datetime]**
 > [updateType] stories for today have been posted in [thread] (if it says unknown, go to <#1075597808360501358>)! Feel free to discuss in the thread!
 > If you have a story you think should be added, DM me!`;
@@ -89,7 +89,7 @@ export const generateUpdateMessage = (
         ).getTime() / 1000;
     const datetime = `<t:${timestamp}:f>`;
 
-    return template
+    return updateTemplate
         .replace("[datetime]", datetime)
         .replace("[updateType]", updateType)
         .replace("[thread]", `<#${threadId}>`);
