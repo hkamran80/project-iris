@@ -5,7 +5,7 @@ import DateCard from "@/components/DateCard";
 import AddDateButton from "./AddDateButton";
 
 const Home = async () => {
-    const dates = (await getDates()).reverse();
+    const dates = await getDates();
 
     const addDate = async () => {
         "use server";
