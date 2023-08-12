@@ -1,6 +1,8 @@
 import { Client, Events, GatewayIntentBits, TextChannel } from "discord.js";
 import { createClient } from "redis";
 import { config } from "dotenv";
+import { createLogger, transports, format } from "winston";
+import LokiTransport from "winston-loki";
 import { dateToString } from "./dates";
 import { compileMessages, generateUpdateMessage } from "./messaging";
 import { checkChangedHash, checkHashes } from "./update";
@@ -10,12 +12,29 @@ config({ path: "../.env" });
 
 const discordClient = new Client({ intents: [GatewayIntentBits.Guilds] });
 const redisClient = createClient({ url: process.env.REDIS_URL });
+const logger = createLogger({
+    format: format.combine(
+        format.timestamp({
+          format: 'YYYY-MM-DD HH:mm:ss'
+        }),
+        format.errors({ stack: true }),
+        format.splat(),
+        format.json()
+      ),
+    transports: [
+        new transports.Console(),
+        new LokiTransport({
+            host: process.env.LOKI_URL as string,
+            labels: { job: "iris-discord" },
+        }),
+    ],
+});
 
 discordClient.once(Events.ClientReady, async (bot) => {
-    console.log(`Ready! Logged in as ${bot.user.tag}.`);
+    logger.info(`Ready! Logged in as ${bot.user.tag}.`);
 
     await redisClient.connect();
-    console.log("Connected to Redis.");
+    logger.info("Connected to Redis.");
 
     const storiesChannel = bot.channels.cache.get(
         process.env.DISCORD_STORIES_CHANNEL_ID as string,
@@ -31,7 +50,7 @@ discordClient.once(Events.ClientReady, async (bot) => {
         const redisId = `${redisMessage}.messageId`;
         const redisHashesId = `${redisMessage}.hashes`;
 
-        console.log(`Story update received for ${redisMessage}.`);
+        logger.info(`Story update received for ${redisMessage}.`);
 
         if (stories.published !== "") {
             const compiledBlocks = compileMessages(redisMessage, stories);
@@ -39,7 +58,7 @@ discordClient.once(Events.ClientReady, async (bot) => {
             if (compiledBlocks.length > 0) {
                 const storyMessageId = await redisClient.get(redisId);
                 if (storyMessageId) {
-                    console.log(`Story message exists.`);
+                    logger.info(`Story message exists.`);
 
                     const hashes = (await redisClient.hGetAll(
                         redisHashesId,
@@ -62,7 +81,7 @@ discordClient.once(Events.ClientReady, async (bot) => {
                             await message.edit(compiledBlocks[0]);
 
                             if (hashChanges.description) {
-                                console.log("Updated description.");
+                                logger.info("Updated description.");
                                 await redisClient.hSet(
                                     redisHashesId,
                                     "description",
@@ -105,7 +124,7 @@ discordClient.once(Events.ClientReady, async (bot) => {
                                         }
                                     },
                                 );
-                                console.log("Thread messages sent.");
+                                logger.info("Thread messages sent.");
                             }
 
                             if (
@@ -115,7 +134,7 @@ discordClient.once(Events.ClientReady, async (bot) => {
                                 const difference =
                                     existingThreadMessagesCount -
                                     threadCompiledBlocks.length;
-                                console.log(
+                                    logger.info(
                                     `Extraneous messages detected, removing ${difference} message${
                                         difference !== 1 ? "s" : ""
                                     }.`,
@@ -132,7 +151,7 @@ discordClient.once(Events.ClientReady, async (bot) => {
                                     });
                             }
 
-                            console.log("Updated stories.");
+                            logger.info("Updated stories.");
                             await redisClient.hSet(
                                 redisHashesId,
                                 "stories",
@@ -146,11 +165,11 @@ discordClient.once(Events.ClientReady, async (bot) => {
                                     true,
                                 ),
                             );
-                            console.log("Update message sent.");
+                            logger.info("Update message sent.");
                         }
                     }
                 } else {
-                    console.log("No story message existing, creating...");
+                    logger.info("No story message existing, creating...");
                     const message = await storiesChannel.send(
                         compiledBlocks[0],
                     );
@@ -163,12 +182,12 @@ discordClient.once(Events.ClientReady, async (bot) => {
                     for (const block of compiledBlocks.slice(1)) {
                         thread.send(block);
                     }
-                    console.log("Messages sent.");
+                    logger.info("Messages sent.");
 
                     updatesChannel.send(
                         generateUpdateMessage(redisMessage, thread.id, false),
                     );
-                    console.log("Update message sent.");
+                    logger.info("Update message sent.");
 
                     await redisClient.hSet(redisHashesId, {
                         stories: "",
@@ -180,7 +199,7 @@ discordClient.once(Events.ClientReady, async (bot) => {
     };
 
     const subscriber = redisClient.duplicate();
-    subscriber.on("error", (err) => console.error(err));
+    subscriber.on("error", (err) => logger.error(err));
     await subscriber.connect();
     await subscriber.subscribe("updates", listener);
 });

@@ -25,7 +25,9 @@
         "discord.js": "^14.12.1",
         "dotenv": "^16.3.1",
         "extensionless": "^1.4.5",
-        "redis": "^4.6.7"
+        "redis": "^4.6.7",
+        "winston": "^3.10.0",
+        "winston-loki": "^6.0.7"
     },
     "devDependencies": {
         "@hkamran/eslint-config": "^1.0.1",
