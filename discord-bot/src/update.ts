@@ -1,5 +1,5 @@
 import { createHash } from "crypto";
-import type { Stories, StoriesDocument } from "./stories";
+import type { HashOutput, Stories, StoriesDocument } from "./types";
 
 const hash = (content: string) =>
     createHash("sha256").update(content).digest("hex");
@@ -32,7 +32,7 @@ export const checkHashes = (
     storiesDocument: StoriesDocument,
     storiesHash: string,
     descriptionHsah: string,
-): Record<"stories" | "description", string | boolean> => {
+): HashOutput => {
     const storiesHashMatch = checkStoriesHash(
         storiesDocument.stories,
         storiesHash,
