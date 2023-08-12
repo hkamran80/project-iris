@@ -1,5 +1,5 @@
 import { dateToString, getDateFromYYYYMMDD } from "./dates";
-import type { StoriesDocument, StoryGroup, StoryLink } from "./stories";
+import type { StoriesDocument, StoryGroup, StoryLink } from "./types";
 
 const getStoryLinkDisplay = (link: StoryLink) =>
     typeof link === "object" ? `<${link.link}> — "${link.title}"` : `<${link}>`;
