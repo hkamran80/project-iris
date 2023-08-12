@@ -16,7 +16,7 @@ const StoryLinkRow = ({ link, index, length, firstIndex }: Props) => {
 
     return (
         <p className="flex w-full items-center text-xs leading-5 text-gray-500">
-            <div className="flex-1">
+            <div className="flex-1 truncate">
                 <NavLink href={getStoryLink(link)}>{storyLink}</NavLink>
             </div>
 

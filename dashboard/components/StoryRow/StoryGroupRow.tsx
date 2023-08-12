@@ -16,7 +16,7 @@ const StoryGroupRow = ({ group, index, length, firstIndex }: Props) => (
         <div className="flex items-center text-sm font-semibold leading-6 text-gray-900 dark:text-gray-100">
             <span className="flex-1">{group.name}</span>
 
-            <div className="items-center space-x-3">
+            <div className="items-center space-x-3 text-gray-500">
                 <StoryGroupRowIndexAdjustment
                     group={group}
                     index={index}
